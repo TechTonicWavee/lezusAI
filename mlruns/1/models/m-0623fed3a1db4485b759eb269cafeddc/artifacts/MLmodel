@@ -1,0 +1,23 @@
+artifact_path: file:C:/Users/PRIYANSHU/Desktop/DRISHTI-AI/mlruns/1/models/m-0623fed3a1db4485b759eb269cafeddc/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.13.11
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.9.1
+    skops_trusted_types: null
+mlflow_version: 3.18.0
+model_id: m-0623fed3a1db4485b759eb269cafeddc
+model_size_bytes: 364423
+model_uuid: m-0623fed3a1db4485b759eb269cafeddc
+prompts: null
+run_id: 0d3dcf1684d04660b0fd8d8f6743c0ff
+utc_time_created: '2026-11-19 16:12:06.074140'

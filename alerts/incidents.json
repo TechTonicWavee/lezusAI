@@ -1,0 +1,265 @@
+[
+    {
+        "id": "5b94b118",
+        "fingerprint": "d8ce6ca6d5b2",
+        "title": "[ERROR] Database Anomaly Detected",
+        "message": "ERROR: Database connection timeout",
+        "severity": "ERROR",
+        "category": "database",
+        "source": "Log_Anomaly_Detector",
+        "status": "RESOLVED",
+        "occurrence_count": 2,
+        "created_at": "2026-11-19T21:45:01+05:30",
+        "first_seen_at": "2026-11-19T21:45:01+05:30",
+        "last_seen_at": "2026-11-19T21:45:01+05:30",
+        "correlated_incident_id": null,
+        "correlation_group": "group_database_2026-11-19",
+        "resolved_at": "2026-11-19T21:45:14+05:30",
+        "resolution_notes": "DB pool recycled",
+        "resolved_by": "AIOps_Operator",
+        "automated_response_triggered": false,
+        "metadata": {},
+        "recent_occurrences": [
+            {
+                "timestamp": "2026-11-19T21:45:01+05:30",
+                "message": "ERROR: Database connection timeout"
+            }
+        ]
+    },
+    {
+        "id": "98aabae9",
+        "fingerprint": "d8ce6ca6d5b2",
+        "title": "[ERROR] Database Anomaly Detected",
+        "message": "ERROR: Database connection timeout",
+        "severity": "ERROR",
+        "category": "database",
+        "source": "API_Predict_Service",
+        "status": "RESOLVED",
+        "occurrence_count": 3,
+        "created_at": "2026-11-19T21:50:35+05:30",
+        "first_seen_at": "2026-11-19T21:50:35+05:30",
+        "last_seen_at": "2026-11-19T21:51:41+05:30",
+        "correlated_incident_id": null,
+        "correlation_group": "group_database_2026-11-19",
+        "resolved_at": "2026-11-19T21:51:41+05:30",
+        "resolution_notes": "Connection pool re-initialized",
+        "resolved_by": "AIOps_Operator",
+        "automated_response_triggered": true,
+        "metadata": {},
+        "last_remediation_action": "MEMORY_RECLAMATION",
+        "recent_occurrences": [
+            {
+                "timestamp": "2026-11-19T21:51:41+05:30",
+                "message": "ERROR: Database connection timeout"
+            },
+            {
+                "timestamp": "2026-11-19T21:51:41+05:30",
+                "message": "ERROR: Database connection timeout"
+            }
+        ]
+    },
+    {
+        "id": "06bfdc67",
+        "fingerprint": "d8ce6ca6d5b2",
+        "title": "[ERROR] Database Anomaly Detected",
+        "message": "ERROR: Database connection timeout",
+        "severity": "ERROR",
+        "category": "database",
+        "source": "API_Predict_Service",
+        "status": "RESOLVED",
+        "occurrence_count": 3,
+        "created_at": "2026-11-19T21:52:08+05:30",
+        "first_seen_at": "2026-11-19T21:52:08+05:30",
+        "last_seen_at": "2026-11-19T21:58:11+05:30",
+        "correlated_incident_id": null,
+        "correlation_group": "group_database_2026-11-19",
+        "resolved_at": "2026-11-19T21:58:11+05:30",
+        "resolution_notes": "Connection pool re-initialized",
+        "resolved_by": "AIOps_Operator",
+        "automated_response_triggered": true,
+        "metadata": {},
+        "last_remediation_action": "MEMORY_RECLAMATION",
+        "recent_occurrences": [
+            {
+                "timestamp": "2026-11-19T21:58:11+05:30",
+                "message": "ERROR: Database connection timeout"
+            },
+            {
+                "timestamp": "2026-11-19T21:58:11+05:30",
+                "message": "ERROR: Database connection timeout"
+            }
+        ]
+    },
+    {
+        "id": "cb296d24",
+        "fingerprint": "d8ce6ca6d5b2",
+        "title": "[ERROR] Database Anomaly Detected",
+        "message": "ERROR: Database connection timeout",
+        "severity": "ERROR",
+        "category": "database",
+        "source": "API_Predict_Service",
+        "status": "MITIGATING",
+        "occurrence_count": 2,
+        "created_at": "2026-11-19T21:58:27+05:30",
+        "first_seen_at": "2026-11-19T21:58:27+05:30",
+        "last_seen_at": "2026-11-19T22:32:45+05:30",
+        "correlated_incident_id": null,
+        "correlation_group": "group_database_2026-11-19",
+        "resolved_at": null,
+        "resolution_notes": null,
+        "resolved_by": null,
+        "automated_response_triggered": true,
+        "metadata": {},
+        "last_remediation_action": "DATABASE_POOL_RECYCLE",
+        "recent_occurrences": [
+            {
+                "timestamp": "2026-11-19T22:32:45+05:30",
+                "message": "ERROR: Database connection timeout"
+            }
+        ]
+    },
+    {
+        "id": "4f617615",
+        "project_id": "e2e-suite-model",
+        "fingerprint": "5e9554998a18",
+        "title": "[ERROR] Inference Anomaly Detected (e2e-suite-model)",
+        "message": "Connection pool exhausted",
+        "severity": "ERROR",
+        "category": "inference",
+        "source": "Telemetry_e2e-suite-model",
+        "status": "MITIGATING",
+        "occurrence_count": 4,
+        "created_at": "2026-11-19T22:43:42+05:30",
+        "first_seen_at": "2026-11-19T22:43:42+05:30",
+        "last_seen_at": "2026-11-20T00:23:28+05:30",
+        "correlated_incident_id": null,
+        "correlation_group": "group_e2e-suite-model_inference_2026-11-19",
+        "resolved_at": null,
+        "resolution_notes": null,
+        "resolved_by": null,
+        "automated_response_triggered": true,
+        "metadata": {
+            "telemetry_id": "a5635647",
+            "model_name": null
+        },
+        "last_remediation_action": "MODEL_INFERENCE_FALLBACK_RELOAD",
+        "recent_occurrences": [
+            {
+                "timestamp": "2026-11-19T22:46:09+05:30",
+                "message": "Connection pool exhausted"
+            },
+            {
+                "timestamp": "2026-11-19T23:03:52+05:30",
+                "message": "Connection pool exhausted"
+            },
+            {
+                "timestamp": "2026-11-20T00:23:28+05:30",
+                "message": "Connection pool exhausted"
+            }
+        ]
+    },
+    {
+        "id": "4d460e66",
+        "project_id": "default",
+        "fingerprint": "b41a8b520b7f",
+        "title": "[ERROR] Database Anomaly Detected (default)",
+        "message": "ERROR: Database connection timeout",
+        "severity": "ERROR",
+        "category": "database",
+        "source": "Log_Anomaly_Detector",
+        "status": "RESOLVED",
+        "occurrence_count": 2,
+        "created_at": "2026-11-19T22:43:58+05:30",
+        "first_seen_at": "2026-11-19T22:43:58+05:30",
+        "last_seen_at": "2026-11-19T22:43:58+05:30",
+        "correlated_incident_id": "cb296d24",
+        "correlation_group": "group_default_database_2026-11-19",
+        "resolved_at": "2026-11-19T22:43:58+05:30",
+        "resolution_notes": "Connection pool re-initialized",
+        "resolved_by": "AIOps_Operator",
+        "automated_response_triggered": true,
+        "metadata": {},
+        "recent_occurrences": [
+            {
+                "timestamp": "2026-11-19T22:43:58+05:30",
+                "message": "ERROR: Database connection timeout"
+            }
+        ],
+        "last_remediation_action": "MEMORY_RECLAMATION"
+    },
+    {
+        "id": "2a26a95c",
+        "project_id": "default",
+        "fingerprint": "b41a8b520b7f",
+        "title": "[ERROR] Database Anomaly Detected (default)",
+        "message": "ERROR: Database connection timeout",
+        "severity": "ERROR",
+        "category": "database",
+        "source": "API_Predict_Service",
+        "status": "MITIGATING",
+        "occurrence_count": 1,
+        "created_at": "2026-11-19T22:44:15+05:30",
+        "first_seen_at": "2026-11-19T22:44:15+05:30",
+        "last_seen_at": "2026-11-19T22:44:15+05:30",
+        "correlated_incident_id": "cb296d24",
+        "correlation_group": "group_default_database_2026-11-19",
+        "resolved_at": null,
+        "resolution_notes": null,
+        "resolved_by": null,
+        "automated_response_triggered": true,
+        "metadata": {},
+        "last_remediation_action": "DATABASE_POOL_RECYCLE"
+    },
+    {
+        "id": "1a14cdf6",
+        "project_id": "house-price-prediction",
+        "fingerprint": "528636fde4f0",
+        "title": "[ERROR] Inference Anomaly Detected (house-price-prediction)",
+        "message": "Database connection timeout while fetching property historical tax assessment",
+        "severity": "ERROR",
+        "category": "inference",
+        "source": "Telemetry_house-price-prediction",
+        "status": "MITIGATING",
+        "occurrence_count": 1,
+        "created_at": "2026-11-19T22:54:02+05:30",
+        "first_seen_at": "2026-11-19T22:54:02+05:30",
+        "last_seen_at": "2026-11-19T22:54:02+05:30",
+        "correlated_incident_id": null,
+        "correlation_group": "group_house-price-prediction_inference_2026-11-19",
+        "resolved_at": null,
+        "resolution_notes": null,
+        "resolved_by": null,
+        "automated_response_triggered": true,
+        "metadata": {
+            "telemetry_id": "8e382fc6",
+            "model_name": "house-price-random-forest"
+        },
+        "last_remediation_action": "DATABASE_POOL_RECYCLE"
+    },
+    {
+        "id": "4f8e52a6",
+        "project_id": "fraud-detection-engine",
+        "fingerprint": "74f4b30c0a61",
+        "title": "[ERROR] Inference Anomaly Detected (fraud-detection-engine)",
+        "message": "Redis cluster timeout on node redis-cluster-02:6379 after 2500ms",
+        "severity": "ERROR",
+        "category": "inference",
+        "source": "Telemetry_fraud-detection-engine",
+        "status": "MITIGATING",
+        "occurrence_count": 1,
+        "created_at": "2026-11-19T23:03:13+05:30",
+        "first_seen_at": "2026-11-19T23:03:13+05:30",
+        "last_seen_at": "2026-11-19T23:03:13+05:30",
+        "correlated_incident_id": null,
+        "correlation_group": "group_fraud-detection-engine_inference_2026-11-19",
+        "resolved_at": null,
+        "resolution_notes": null,
+        "resolved_by": null,
+        "automated_response_triggered": true,
+        "metadata": {
+            "telemetry_id": "046437f6",
+            "model_name": "fraud-risk-lightgbm"
+        },
+        "last_remediation_action": "MODEL_INFERENCE_FALLBACK_RELOAD"
+    }
+]

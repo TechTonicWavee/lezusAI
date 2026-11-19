@@ -1,0 +1,89 @@
+[
+    {
+        "project_id": "default",
+        "name": "DRISHTI Core System",
+        "description": "Default operational workspace for core DRISHTI system events",
+        "api_key_hash": "09369ed179c370a43845d8e34cb68342215c9da846572f6e35d86dea5fc9cd1e",
+        "api_key_prefix": "dr_live_defa",
+        "created_at": "2026-11-19T22:34:18+05:30",
+        "status": "ACTIVE",
+        "model_type": "operational_anomaly",
+        "framework": "loglizer",
+        "schema_mapping": {}
+    },
+    {
+        "project_id": "taxi-fare-predictor",
+        "name": "NYC Taxi Duration & Fare Demo",
+        "description": "MLOps demonstration model for trip duration and fare prediction",
+        "api_key_hash": "52ad0051ce14e331ca66ee46d1632199e0a0b57db5ac67ae9d691e9990463e4f",
+        "api_key_prefix": "dr_live_taxi",
+        "created_at": "2026-11-19T22:34:18+05:30",
+        "status": "ACTIVE",
+        "model_type": "regression",
+        "framework": "scikit-learn",
+        "schema_mapping": {
+            "latency_field": "latency_ms",
+            "prediction_field": "predicted_duration_minutes"
+        }
+    },
+    {
+        "project_id": "house-price-prediction",
+        "name": "House Price Valuation Engine",
+        "description": "Real estate appraisal regression model evaluating residential homes.",
+        "api_key_hash": "56a851a3befe0314cdb408209427122d2ba356e8f56603cc7d0016997dd6ba90",
+        "api_key_prefix": "dr_live_e94e",
+        "created_at": "2026-11-19T22:53:30+05:30",
+        "status": "ACTIVE",
+        "model_type": "regression",
+        "framework": "scikit-learn",
+        "schema_mapping": {
+            "latency_field": "latency_ms",
+            "prediction_field": "predicted_price_usd",
+            "target_field": "actual_sale_price_usd"
+        }
+    },
+    {
+        "project_id": "fraud-detection-engine",
+        "name": "Credit Card Fraud Detection Engine",
+        "description": "Real-time payment transaction risk scoring and fraud classification.",
+        "api_key_hash": "c627ae7773567a3bfef7bc38782f9052b7095b9339ae4efdb0546514c2b5c9e1",
+        "api_key_prefix": "dr_live_28e3",
+        "created_at": "2026-11-19T23:03:13+05:30",
+        "status": "ACTIVE",
+        "model_type": "binary_classification",
+        "framework": "scikit-learn",
+        "schema_mapping": {
+            "latency_field": "latency_ms",
+            "prediction_field": "is_fraud_prediction",
+            "target_field": "actual_chargeback_status"
+        }
+    },
+    {
+        "project_id": "credit-fraud-detection-engine",
+        "name": "Credit Card Fraud Detection Engine",
+        "description": "Credit Card Fraud Detection Engine",
+        "api_key_hash": "99aaba9a690e2c5821a329e656f73dd46c3bd08b12615068afab2751801ad77e",
+        "api_key_prefix": "dr_live_4172",
+        "created_at": "2026-11-19T23:24:40+05:30",
+        "status": "ACTIVE",
+        "model_type": "classification",
+        "framework": "scikit-learn",
+        "schema_mapping": {}
+    },
+    {
+        "project_id": "string",
+        "name": "string",
+        "description": "",
+        "api_key_hash": "038c12e7e244dba1eff78fe7fb34e3b75f7b1a883b5699e03dc24b46aae0c380",
+        "api_key_prefix": "dr_live_a64f",
+        "created_at": "2026-11-19T23:50:00+05:30",
+        "status": "ACTIVE",
+        "model_type": "generic",
+        "framework": "scikit-learn",
+        "schema_mapping": {
+            "additionalProp1": "string",
+            "additionalProp2": "string",
+            "additionalProp3": "string"
+        }
+    }
+]

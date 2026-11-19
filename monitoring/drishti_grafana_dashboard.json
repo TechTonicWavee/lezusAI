@@ -1,0 +1,76 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "title": "DRISHTI AI - Intelligent MLOps & AIOps Dashboard",
+  "tags": ["drishti", "aiops", "mlops", "observability"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Total Logs Processed",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "targets": [{ "expr": "drishti_logs_processed_total", "refId": "A" }]
+    },
+    {
+      "id": 2,
+      "title": "Total Anomalies Detected",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+      "targets": [{ "expr": "drishti_anomalies_detected_total", "refId": "A" }]
+    },
+    {
+      "id": 3,
+      "title": "Open Incidents",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
+      "targets": [{ "expr": "drishti_open_incidents", "refId": "A" }]
+    },
+    {
+      "id": 4,
+      "title": "Resolved Incidents",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
+      "targets": [{ "expr": "drishti_resolved_incidents", "refId": "A" }]
+    },
+    {
+      "id": 5,
+      "title": "Automated Responses Executed",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
+      "targets": [{ "expr": "drishti_automated_responses_total", "refId": "A" }]
+    },
+    {
+      "id": 6,
+      "title": "Model Prediction Latency (ms)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
+      "targets": [{ "expr": "drishti_prediction_latency_ms", "refId": "A" }]
+    },
+    {
+      "id": 7,
+      "title": "Log Intelligence Event Stream",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        { "expr": "rate(drishti_logs_processed_total[1m])", "legendFormat": "Total Logs/s", "refId": "A" },
+        { "expr": "rate(drishti_anomalies_detected_total[1m])", "legendFormat": "Anomalies/s", "refId": "B" }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "MLOps Model Metric (RMSE)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        { "expr": "drishti_mlops_rmse", "legendFormat": "RMSE", "refId": "A" }
+      ]
+    }
+  ]
+}
+

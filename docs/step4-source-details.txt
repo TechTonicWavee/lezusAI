@@ -1,0 +1,593 @@
+========== DRISHTI SOURCE DETAILS ==========
+
+
+========== .\mlops-platform\ml-flow\src\train.py ==========
+import os
+import sys
+import json
+import tempfile
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import xgboost as xgb
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.model_selection import train_test_split
+
+import mlflow
+import mlflow.xgboost
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from src.data.download_data import download_taxi_data
+from src.feature_engineering import preprocess_data, save_preprocessor
+
+
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+MLFLOW_S3_ENDPOINT = os.getenv("MLFLOW_S3_ENDPOINT_URL", "http://localhost:9000")
+AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID", "")
+AWS_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+EXPERIMENT_NAME = "taxi_fare_prediction"
+MODEL_NAME = "taxi_fare_predictor"
+
+
+def setup_mlflow():
+    os.environ["AWS_ACCESS_KEY_ID"] = AWS_ACCESS_KEY
+    os.environ["AWS_SECRET_ACCESS_KEY"] = AWS_SECRET_KEY
+    os.environ["MLFLOW_S3_ENDPOINT_URL"] = MLFLOW_S3_ENDPOINT
+
+    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+    mlflow.set_experiment(EXPERIMENT_NAME)
+
+
+def train(params: dict = None):
+    if params is None:
+        params = {
+            "n_estimators": 200,
+            "max_depth": 6,
+            "learning_rate": 0.1,
+            "subsample": 0.8,
+            "colsample_bytree": 0.8,
+            "objective": "reg:squarederror",
+            "random_state": 42,
+        }
+
+    setup_mlflow()
+
+    train_df, test_df = download_taxi_data()
+    print(f"Data loaded: train={train_df.shape}, test={test_df.shape}")
+
+    X_train, y_train, preprocessor = preprocess_data(train_df, fit=True)
+    X_test, y_test = preprocess_data(test_df, preprocessor, fit=False)
+
+    preprocessor_path = "data/processed/preprocessor.joblib"
+    save_preprocessor(preprocessor, preprocessor_path)
+    print(f"Preprocessor saved to {preprocessor_path}")
+
+    with mlflow.start_run(run_name="xgboost-baseline") as run:
+        mlflow.log_params(params)
+        mlflow.log_metric("train_size", len(X_train))
+        mlflow.log_metric("test_size", len(X_test))
+        mlflow.log_param("num_features", X_train.shape[1])
+
+        model = xgb.XGBRegressor(**params)
+        model.fit(
+            X_train, y_train,
+            eval_set=[(X_test, y_test)],
+            verbose=False,
+        )
+
+        y_pred = model.predict(X_test)
+
+        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+        mae = mean_absolute_error(y_test, y_pred)
+        r2 = r2_score(y_test, y_pred)
+
+        mlflow.log_metrics({
+            "rmse": rmse,
+            "mae": mae,
+            "r2": r2,
+        })
+
+        print(f"RMSE: {rmse:.4f}, MAE: {mae:.4f}, R²: {r2:.4f}")
+
+        mlflow.xgboost.save_model(model, path="model")
+
+        mlflow.log_artifacts("model", artifact_path="model")
+
+        result = mlflow.register_model(
+            f"runs:/{run.info.run_id}/model",
+            MODEL_NAME,
+        )
+
+        mlflow.log_artifact(preprocessor_path, artifact_path="preprocessor")
+
+        feature_importance = model.get_booster().get_score(importance_type="gain")
+        top_features = dict(sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)[:10])
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump({
+                "rmse": rmse,
+                "mae": mae,
+                "r2": r2,
+                "params": params,
+                "top_features": top_features,
+            }, f, indent=2)
+            mlflow.log_artifact(f.name, artifact_path="metrics")
+
+        run_id = run.info.run_id
+        print(f"MLflow Run ID: {run_id}")
+
+        client = mlflow.tracking.MlflowClient()
+        try:
+            latest_versions = client.get_latest_versions(MODEL_NAME, stages=["None"])
+            if latest_versions:
+                client.transition_model_version_stage(
+                    name=MODEL_NAME,
+                    version=latest_versions[0].version,
+                    stage="Staging",
+                )
+                print(f"Model {MODEL_NAME} version {latest_versions[0].version} promoted to Staging")
+        except Exception as e:
+            print(f"Model registration note: {e}")
+
+        return run_id, rmse, mae, r2
+
+
+if __name__ == "__main__":
+    train()
+
+
+========== .\mlops-platform\ml-flow\src\feature_engineering.py ==========
+import pandas as pd
+import numpy as np
+from pathlib import Path
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+import joblib
+
+
+NUMERIC_FEATURES = [
+    "passenger_count",
+    "trip_distance",
+    "pickup_hour",
+    "pickup_day",
+    "pickup_month",
+]
+
+CATEGORICAL_FEATURES = [
+    "PULocationID",
+    "DOLocationID",
+    "rate_code",
+]
+
+
+def build_preprocessor() -> ColumnTransformer:
+    numeric_transformer = Pipeline([
+        ("scaler", StandardScaler()),
+    ])
+
+    categorical_transformer = Pipeline([
+        ("onehot", OneHotEncoder(
+            handle_unknown="ignore",
+            max_categories=50,
+            sparse_output=False,
+        )),
+    ])
+
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ("num", numeric_transformer, NUMERIC_FEATURES),
+            ("cat", categorical_transformer, CATEGORICAL_FEATURES),
+        ],
+        remainder="drop",
+    )
+    return preprocessor
+
+
+def preprocess_data(df: pd.DataFrame, preprocessor: ColumnTransformer = None, fit: bool = True):
+    features = NUMERIC_FEATURES + CATEGORICAL_FEATURES
+    X = df[features].copy()
+    y = df["trip_duration_min"].values
+
+    X[NUMERIC_FEATURES] = X[NUMERIC_FEATURES].fillna(X[NUMERIC_FEATURES].median())
+    X[CATEGORICAL_FEATURES] = X[CATEGORICAL_FEATURES].fillna(0).astype(int)
+
+    if preprocessor is None:
+        preprocessor = build_preprocessor()
+
+    if fit:
+        X_processed = preprocessor.fit_transform(X)
+        return X_processed, y, preprocessor
+    else:
+        X_processed = preprocessor.transform(X)
+        return X_processed, y
+
+
+def save_preprocessor(preprocessor: ColumnTransformer, path: str):
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(preprocessor, path)
+
+
+def load_preprocessor(path: str) -> ColumnTransformer:
+    return joblib.load(path)
+
+
+========== .\mlops-platform\ml-flow\requirements.txt ==========
+mlflow>=2.19.0
+xgboost>=2.1.0
+scikit-learn>=1.6.0
+pandas>=2.2.0
+numpy>=2.0.0
+boto3>=1.36.0
+pyarrow>=18.0.0
+evidently>=0.6.0
+matplotlib>=3.10.0
+kagglehub>=0.3.0
+
+
+========== .\log-anomaly\loglizer\models\IsolationForest.py ==========
+"""
+The implementation of IsolationForest model for anomaly detection.
+
+Authors: 
+    LogPAI Team
+
+Reference: 
+    [1] Fei Tony Liu, Kai Ming Ting, Zhi-Hua Zhou. Isolation Forest. International
+        Conference on Data Mining (ICDM), 2008.
+
+"""
+
+
+
+
+
+import numpy as np
+from sklearn.ensemble import IsolationForest as iForest
+from ..utils import metrics
+
+class IsolationForest(iForest):
+
+    def __init__(self, n_estimators=100, max_samples='auto', contamination=0.03, **kwargs):
+        """ The IsolationForest model for anomaly detection
+
+        Arguments
+        ---------
+            n_estimators : int, optional (default=100). The number of base estimators in the ensemble.
+            max_samples : int or float, optional (default="auto")
+                The number of samples to draw from X to train each base estimator.
+                    - If int, then draw max_samples samples.
+                    - If float, then draw max_samples * X.shape[0] samples.
+                    - If "auto", then max_samples=min(256, n_samples).
+                If max_samples is larger than the number of samples provided, all samples will be used 
+                for all trees (no sampling).
+            contamination : float in (0., 0.5), optional (default='auto')
+                The amount of contamination of the data set, i.e. the proportion of outliers in the data 
+                set. Used when fitting to define the threshold on the decision function. If 'auto', the 
+                decision function threshold is determined as in the original paper.
+            max_features : int or float, optional (default=1.0)
+                The number of features to draw from X to train each base estimator.
+                    - If int, then draw max_features features.
+                    - If float, then draw max_features * X.shape[1] features.
+            bootstrap : boolean, optional (default=False)
+                If True, individual trees are fit on random subsets of the training data sampled with replacement. 
+                If False, sampling without replacement is performed.
+            n_jobs : int or None, optional (default=None)
+                The number of jobs to run in parallel for both fit and predict. None means 1 unless in a 
+                joblib.parallel_backend context. -1 means using all processors. 
+            random_state : int, RandomState instance or None, optional (default=None)
+                If int, random_state is the seed used by the random number generator; 
+                If RandomState instance, random_state is the random number generator; 
+                If None, the random number generator is the RandomState instance used by np.random.
+        
+        Reference
+        ---------
+            For more information, please visit https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html
+        """
+
+        super(IsolationForest, self).__init__(n_estimators=n_estimators, max_samples=max_samples, 
+            contamination=contamination, **kwargs)
+
+
+    def fit(self, X):
+        """
+        Auguments
+        ---------
+            X: ndarray, the event count matrix of shape num_instances-by-num_events
+        """
+
+        print('====== Model summary ======')
+        super(IsolationForest, self).fit(X)
+
+    def predict(self, X):
+        """ Predict anomalies with mined invariants
+
+        Arguments
+        ---------
+            X: the input event count matrix
+
+        Returns
+        -------
+            y_pred: ndarray, the predicted label vector of shape (num_instances,)
+        """
+        
+        y_pred = super(IsolationForest, self).predict(X)
+        y_pred = np.where(y_pred > 0, 0, 1)
+        return y_pred
+
+    def evaluate(self, X, y_true):
+        print('====== Evaluation summary ======')
+        y_pred = self.predict(X)
+        precision, recall, f1 = metrics(y_pred, y_true)
+        print('Precision: {:.3f}, recall: {:.3f}, F1-measure: {:.3f}\n'.format(precision, recall, f1))
+        return precision, recall, f1
+
+
+
+========== .\log-anomaly\loglizer\preprocessing.py ==========
+"""
+The interface for data preprocessing.
+
+Authors:
+    LogPAI Team
+
+"""
+
+
+import pandas as pd
+import os
+import numpy as np
+import re
+from collections import Counter
+from scipy.special import expit
+from itertools import compress
+
+
+
+class FeatureExtractor(object):
+
+    def __init__(self):
+        self.idf_vec = None
+        self.mean_vec = None
+        self.events = None
+        self.term_weighting = None
+        self.normalization = None
+        self.oov = None
+
+    def fit_transform(self, X_seq, term_weighting=None, normalization=None, oov=False, min_count=1):
+        """ Fit and transform the data matrix
+
+        Arguments
+        ---------
+            X_seq: ndarray, log sequences matrix
+            term_weighting: None or `tf-idf`
+            normalization: None or `zero-mean`
+            oov: bool, whether to use OOV event
+            min_count: int, the minimal occurrence of events (default 0), only valid when oov=True.
+
+        Returns
+        -------
+            X_new: The transformed data matrix
+        """
+        print('====== Transformed train data summary ======')
+        self.term_weighting = term_weighting
+        self.normalization = normalization
+        self.oov = oov
+
+        X_counts = []
+        for i in range(X_seq.shape[0]):
+            event_counts = Counter(X_seq[i])
+            X_counts.append(event_counts)
+        X_df = pd.DataFrame(X_counts)
+        X_df = X_df.fillna(0)
+        self.events = X_df.columns
+        X = X_df.values
+        if self.oov:
+            oov_vec = np.zeros(X.shape[0])
+            if min_count > 1:
+                idx = np.sum(X > 0, axis=0) >= min_count
+                oov_vec = np.sum(X[:, ~idx] > 0, axis=1)
+                X = X[:, idx]
+                self.events = np.array(X_df.columns)[idx].tolist()
+            X = np.hstack([X, oov_vec.reshape(X.shape[0], 1)])
+        
+        num_instance, num_event = X.shape
+        if self.term_weighting == 'tf-idf':
+            df_vec = np.sum(X > 0, axis=0)
+            self.idf_vec = np.log(num_instance / (df_vec + 1e-8))
+            idf_matrix = X * np.tile(self.idf_vec, (num_instance, 1)) 
+            X = idf_matrix
+        if self.normalization == 'zero-mean':
+            mean_vec = X.mean(axis=0)
+            self.mean_vec = mean_vec.reshape(1, num_event)
+            X = X - np.tile(self.mean_vec, (num_instance, 1))
+        elif self.normalization == 'sigmoid':
+            X[X != 0] = expit(X[X != 0])
+        X_new = X
+        
+        print('Train data shape: {}-by-{}\n'.format(X_new.shape[0], X_new.shape[1])) 
+        return X_new
+
+    def transform(self, X_seq):
+        """ Transform the data matrix with trained parameters
+
+        Arguments
+        ---------
+            X: log sequences matrix
+            term_weighting: None or `tf-idf`
+
+        Returns
+        -------
+            X_new: The transformed data matrix
+        """
+        print('====== Transformed test data summary ======')
+        X_counts = []
+        for i in range(X_seq.shape[0]):
+            event_counts = Counter(X_seq[i])
+            X_counts.append(event_counts)
+        X_df = pd.DataFrame(X_counts)
+        X_df = X_df.fillna(0)
+        empty_events = set(self.events) - set(X_df.columns)
+        for event in empty_events:
+            X_df[event] = [0] * len(X_df)
+        X = X_df[self.events].values
+        if self.oov:
+            oov_vec = np.sum(X_df[X_df.columns.difference(self.events)].values > 0, axis=1)
+            X = np.hstack([X, oov_vec.reshape(X.shape[0], 1)])
+        
+        num_instance, num_event = X.shape
+        if self.term_weighting == 'tf-idf':
+            idf_matrix = X * np.tile(self.idf_vec, (num_instance, 1)) 
+            X = idf_matrix
+        if self.normalization == 'zero-mean':
+            X = X - np.tile(self.mean_vec, (num_instance, 1))
+        elif self.normalization == 'sigmoid':
+            X[X != 0] = expit(X[X != 0])
+        X_new = X
+
+        print('Test data shape: {}-by-{}\n'.format(X_new.shape[0], X_new.shape[1])) 
+
+        return X_new
+
+
+========== .\log-anomaly\loglizer_demo.py ==========
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import sys
+import os
+import pandas as pd
+from loglizer.models import PCA, IsolationForest, DecisionTree, LR
+from loglizer import dataloader, preprocessing
+import pickle
+from tqdm import tqdm
+from sklearn.ensemble import IsolationForest as iForest
+from sklearn.metrics import precision_recall_fscore_support
+import numpy as np
+import time
+import tracemalloc
+
+
+def get_x_y(windows, content2tempalte):
+    x = []
+    y = []
+    for window in tqdm(windows):
+        template_list = []
+        y_list = []
+        for item in window:
+            template = content2tempalte.get(item["Content"], "")
+            template_list.append(template)
+            y_list.append(item["Label"])
+        x.append(template_list)
+        y.append(1 if sum(y_list) > 0 else 0)
+    return x, y 
+
+
+model_name = "if"
+dataname = "BGL"
+
+if __name__ == "__main__":
+    config_info = {
+        "BGL": {
+            "structure_file": "../../data/BGL/BGL.log_structured.csv",
+            "pkl_path": "../../proceeded_data/BGL/BGL_ws=60m_s=60m_0.8train",
+        },
+        "Thunderbird": {
+            "structure_file": "../../src/Drain_result/Thunderbird.log_structured.csv",
+            "pkl_path": "../../proceeded_data/Thunderbird/Thunderbird_ws=60m_s=60m_0.8train",
+        },
+    }
+
+    structure_file = config_info[dataname]["structure_file"]
+    pkl_path = config_info[dataname]["pkl_path"]
+
+    parsed_result = pd.read_csv(structure_file)
+    content2tempalte = dict(zip(parsed_result["Content"], parsed_result["EventTemplate"]))
+
+    with open(os.path.join(pkl_path, "train.pkl"), "rb") as fr:
+        train_windows = pickle.load(fr)[0:1]
+    with open(os.path.join(pkl_path, "test.pkl"), "rb") as fr:
+        test_windows = pickle.load(fr)[0:1]
+    train_x, train_y = get_x_y(train_windows, content2tempalte)
+    test_x, test_y = get_x_y(test_windows, content2tempalte)
+
+    del parsed_result, content2tempalte
+
+    feature_extractor = preprocessing.FeatureExtractor()
+    
+
+    if model_name.lower() == "if":
+        model = iForest(n_estimators=100, max_features=1)
+
+        s1 = time.time()
+        train_feat = feature_extractor.fit_transform(np.array(train_x), term_weighting='tf-idf', 
+                                                normalization='zero-mean')
+        model.fit(train_feat)
+        s2 = time.time()
+        
+        pred_train = model.decision_function(train_feat)
+        proba_train = (pred_train-pred_train.min()) / (pred_train.max() - pred_train.min())
+
+        s3 = time.time()
+        test_feat = feature_extractor.transform(np.array(test_x))
+        pred_test = model.decision_function(test_feat)
+        s4 = time.time()
+        proba_test = (pred_test-pred_test.min()) / (pred_test.max() - pred_test.min())
+
+    elif model_name.lower() == "dt":
+        
+        s1 = time.time()
+        train_feat = feature_extractor.fit_transform(np.array(train_x), term_weighting='tf-idf', 
+                                                normalization='zero-mean')
+        model = DecisionTree()
+        model.fit(train_feat, train_y)
+        s2 = time.time()
+
+        proba_train = model.predict_proba(train_feat)[:, 1]
+        
+        s3 = time.time()
+        test_feat = feature_extractor.transform(np.array(test_x))
+        proba_test = model.predict_proba(test_feat)[:, 1]
+        s4 = time.time()
+
+    elif model_name.lower() == "lr":
+        s1 = time.time()
+        train_feat = feature_extractor.fit_transform(np.array(train_x), term_weighting='tf-idf', 
+                                                normalization='zero-mean')
+        model = LR()
+        model.fit(train_feat, train_y)
+        s2 = time.time()
+
+        proba_train = model.predict_proba(train_feat)[:, 1]
+        
+        s3 = time.time()
+        test_feat = feature_extractor.transform(np.array(test_x))
+        proba_test = model.predict_proba(test_feat)[:, 1]
+        s4 = time.time()
+
+    print("Training time for {}: {:.3f}".format(model_name, s2-s1))
+    print("Testing time for {}: {:.3f}".format(model_name, s4-s3))
+    # print(f"Peak memory usage: {tracemalloc.get_traced_memory()[1] / (1024*1024):.2f} MB")
+
+
+========== .\log-anomaly\requirements.txt ==========
+sklearn
+pandas
+
+========== KEEP ALERT API SEARCH ==========
+
+Path                                                                                                 
+----                                                                                                 
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\incident-management\ee\identitymanager\identity_managers\key...
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\incident-management\ee\identitymanager\identity_managers\key...
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\incident-management\ee\identitymanager\identity_managers\key...
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\incident-management\ee\identitymanager\identity_managers\key...
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\incident-management\ee\identitymanager\identity_managers\key...
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\incident-management\ee\identitymanager\identity_managers\key...
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\incident-management\ee\identitymanager\identity_managers\key...
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\incident-management\ee\identitymanager\identity_managers\key...
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\incident-management\ee\identitymanager\identity_managers\key...
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\incident-management\ee\identitymanager\identity_managers\key...
+
+
+

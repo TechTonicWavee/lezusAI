@@ -1,0 +1,78 @@
+========== DRISHTI AI SOURCE INSPECTION ==========
+
+========== 1. MLOPS TRAINING FILES ==========
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\mlops-platform\ml-flow\requirements.txt
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\mlops-platform\ml-flow\__init__.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\mlops-platform\ml-flow\src\evaluate.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\mlops-platform\ml-flow\src\feature_engineering.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\mlops-platform\ml-flow\src\promote_model.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\mlops-platform\ml-flow\src\train.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\mlops-platform\ml-flow\src\__init__.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\mlops-platform\ml-flow\tests\test_pipeline.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\mlops-platform\ml-flow\tests\__init__.py
+
+========== 2. MLOPS SERVING FILES ==========
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\mlops-platform\serving\bentofile.yaml
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\mlops-platform\serving\Dockerfile
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\mlops-platform\serving\requirements.txt
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\mlops-platform\serving\service.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\mlops-platform\serving\preprocessor\preprocessor.joblib
+
+========== 3. LOGLIZER PYTHON FILES ==========
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\loglizer_demo.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\utils.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\benchmarks\HDFS_bechmark.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\demo\DecisionTree_demo.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\demo\DeepLog_demo.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\demo\InvariantsMiner_demo.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\demo\InvariantsMiner_demo_without_labels.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\demo\IsolationForest_demo.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\demo\LogClustering_demo.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\demo\LR_demo.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\demo\PCA_demo.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\demo\PCA_demo_without_labels.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\demo\SVM_demo.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\loglizer\dataloader.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\loglizer\preprocessing.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\loglizer\utils.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\loglizer\__init__.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\loglizer\models\DecisionTree.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\loglizer\models\InvariantsMiner.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\loglizer\models\IsolationForest.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\loglizer\models\LogClustering.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\loglizer\models\LR.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\loglizer\models\PCA.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\loglizer\models\SVM.py
+C:\Users\PRIYANSHU\Desktop\DRISHTI-AI\log-anomaly\loglizer\models\__init__.py
+
+========== 4. LOGLIZER ROOT FILES ==========
+.gitignore
+LICENSE
+loglizer_demo.ipynb
+loglizer_demo.py
+README.md
+requirements.txt
+utils.py
+
+========== 5. KEEP ROOT FILES ==========
+.dockerignore
+.gitignore
+.pre-commit-config.yaml
+.python-version
+CHANGELOG.md
+CONTRIBUTING.md
+docker-compose-with-arq.yml
+docker-compose-with-auth.yml
+docker-compose-with-otel.yaml
+docker-compose.common.yml
+docker-compose.dev.yml
+docker-compose.yml
+LICENSE
+poetry.lock
+pyproject.toml
+README.md
+render.yaml
+start.sh
+
+========== 6. PYTHON DEPENDENCY CHECK ==========
+CORE DEPENDENCIES OK
