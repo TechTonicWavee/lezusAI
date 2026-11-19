@@ -676,3 +676,12 @@ def system_stats(project_id: Optional[str] = None):
         "projects_count": len(list_projects()),
         "mlops": get_model_status(),
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    host = os.getenv("DRISHTI_HOST", "127.0.0.1")
+    port = int(os.getenv("DRISHTI_PORT", "8001"))
+    log_level = os.getenv("DRISHTI_LOG_LEVEL", "info")
+    uvicorn.run("integration.api:app", host=host, port=port, reload=True, log_level=log_level)
+

@@ -1,12 +1,12 @@
 {
-  "logs_processed_total": 184,
-  "anomalies_detected_total": 22,
+  "logs_processed_total": 185,
+  "anomalies_detected_total": 23,
   "normal_events_total": 162,
-  "prediction_requests_total": 189,
+  "prediction_requests_total": 190,
   "prediction_errors_total": 11,
-  "incidents_created_total": 15,
+  "incidents_created_total": 16,
   "incidents_resolved_total": 6,
-  "automated_responses_total": 7,
+  "automated_responses_total": 8,
   "mlops_training_runs_total": 0,
   "latest_mlops_rmse": 3.4949,
   "project_events": {
@@ -18,7 +18,7 @@
     "default": 1,
     "house-price-prediction": 8,
     "fraud-detection-engine": 7,
-    "credit-fraud-detection-engine": 21
+    "credit-fraud-detection-engine": 22
   },
   "project_anomalies": {
     "metric-test-model": 15,
@@ -26,7 +26,8 @@
     "system_logs": 0,
     "default": 1,
     "house-price-prediction": 1,
-    "fraud-detection-engine": 1
+    "fraud-detection-engine": 1,
+    "credit-fraud-detection-engine": 1
   },
   "project_errors": {
     "metric-test-model": 5,

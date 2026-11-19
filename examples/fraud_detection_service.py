@@ -19,7 +19,7 @@ from drishti_sdk import DrishtiClient
 
 PROJECT_ID = "fraud-detection-engine"
 PROJECT_NAME = "Credit Card Fraud Detection Engine"
-ENDPOINT = os.getenv("DRISHTI_ENDPOINT", "http://127.0.0.1:8000")
+ENDPOINT = os.getenv("DRISHTI_ENDPOINT", "http://127.0.0.1:8001")
 
 
 def get_or_register_project(endpoint: str) -> str:
@@ -154,7 +154,7 @@ def run_demonstration():
 
     print("\n" + "=" * 70)
     print(f"INTEGRATION DEMONSTRATION COMPLETE for '{PROJECT_ID}'!")
-    print("Now open http://127.0.0.1:8000/dashboard to inspect live telemetry and incidents.")
+    print("Now open http://127.0.0.1:8001/dashboard to inspect live telemetry and incidents.")
     print("=" * 70)
 
 

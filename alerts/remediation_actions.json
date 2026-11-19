@@ -403,5 +403,149 @@
         "is_simulated": true,
         "triggered_by": "Auto_Response_e2e-suite-model",
         "timestamp": "2026-11-20T00:23:28+05:30"
+    },
+    {
+        "action_id": "939b7dce",
+        "incident_id": "ff5fe3a5",
+        "project_id": "test-inc-proj-2",
+        "action_type": "DATABASE_POOL_RECYCLE",
+        "action_name": "Database Connection Pool Recovery",
+        "trigger_event": "ERROR: Database connection timeout",
+        "category": "database",
+        "status": "SUCCESS",
+        "execution_duration_ms": 40.86,
+        "description": "Recycled idle database connections, pinged DB primary, and refreshed connection pool.",
+        "remediation_output": {
+            "pool_size": 25,
+            "idle_connections_reaped": 8,
+            "db_ping_ms": 1.94,
+            "connection_status": "HEALTHY"
+        },
+        "is_simulated": true,
+        "triggered_by": "Automated_AIOps_Engine",
+        "timestamp": "2026-11-20T00:53:50+05:30"
+    },
+    {
+        "action_id": "6b5ee1a4",
+        "incident_id": "4f617615",
+        "project_id": "e2e-suite-model",
+        "action_type": "MODEL_INFERENCE_FALLBACK_RELOAD",
+        "action_name": "Model Inference Baseline Fallback & Reload",
+        "trigger_event": "Connection pool exhausted",
+        "category": "inference",
+        "status": "SUCCESS",
+        "execution_duration_ms": 45.12,
+        "description": "Engaged heuristic fallback scoring and re-initialized trained model artifact from disk.",
+        "remediation_output": {
+            "fallback_mode": "TRANSIENT_ACTIVE",
+            "model_reloaded": true,
+            "artifact_integrity": "SHA256_VERIFIED"
+        },
+        "is_simulated": true,
+        "triggered_by": "Auto_Response_e2e-suite-model",
+        "timestamp": "2026-11-20T00:53:57+05:30"
+    },
+    {
+        "action_id": "17e3be49",
+        "incident_id": "16e59a7f",
+        "project_id": "test-inc-proj-2",
+        "action_type": "DATABASE_POOL_RECYCLE",
+        "action_name": "Database Connection Pool Recovery",
+        "trigger_event": "ERROR: Database connection timeout",
+        "category": "database",
+        "status": "SUCCESS",
+        "execution_duration_ms": 44.66,
+        "description": "Recycled idle database connections, pinged DB primary, and refreshed connection pool.",
+        "remediation_output": {
+            "pool_size": 25,
+            "idle_connections_reaped": 8,
+            "db_ping_ms": 1.35,
+            "connection_status": "HEALTHY"
+        },
+        "is_simulated": true,
+        "triggered_by": "Automated_AIOps_Engine",
+        "timestamp": "2026-11-20T00:58:08+05:30"
+    },
+    {
+        "action_id": "7523d1eb",
+        "incident_id": "4f617615",
+        "project_id": "e2e-suite-model",
+        "action_type": "MODEL_INFERENCE_FALLBACK_RELOAD",
+        "action_name": "Model Inference Baseline Fallback & Reload",
+        "trigger_event": "Connection pool exhausted",
+        "category": "inference",
+        "status": "SUCCESS",
+        "execution_duration_ms": 16.2,
+        "description": "Engaged heuristic fallback scoring and re-initialized trained model artifact from disk.",
+        "remediation_output": {
+            "fallback_mode": "TRANSIENT_ACTIVE",
+            "model_reloaded": true,
+            "artifact_integrity": "SHA256_VERIFIED"
+        },
+        "is_simulated": true,
+        "triggered_by": "Auto_Response_e2e-suite-model",
+        "timestamp": "2026-11-20T00:58:16+05:30"
+    },
+    {
+        "action_id": "3f6b3d14",
+        "incident_id": "8adde397",
+        "project_id": "credit-fraud-detection-engine",
+        "action_type": "DATABASE_POOL_RECYCLE",
+        "action_name": "Database Connection Pool Recovery",
+        "trigger_event": "ERROR: Database connection timeout",
+        "category": "database",
+        "status": "SUCCESS",
+        "execution_duration_ms": 35.05,
+        "description": "Recycled idle database connections, pinged DB primary, and refreshed connection pool.",
+        "remediation_output": {
+            "pool_size": 25,
+            "idle_connections_reaped": 8,
+            "db_ping_ms": 0.91,
+            "connection_status": "HEALTHY"
+        },
+        "is_simulated": true,
+        "triggered_by": "Automated_AIOps_Engine",
+        "timestamp": "2026-11-20T01:02:22+05:30"
+    },
+    {
+        "action_id": "c633e055",
+        "incident_id": "38fac340",
+        "project_id": "test-inc-proj-2",
+        "action_type": "DATABASE_POOL_RECYCLE",
+        "action_name": "Database Connection Pool Recovery",
+        "trigger_event": "ERROR: Database connection timeout",
+        "category": "database",
+        "status": "SUCCESS",
+        "execution_duration_ms": 31.0,
+        "description": "Recycled idle database connections, pinged DB primary, and refreshed connection pool.",
+        "remediation_output": {
+            "pool_size": 25,
+            "idle_connections_reaped": 8,
+            "db_ping_ms": 1.63,
+            "connection_status": "HEALTHY"
+        },
+        "is_simulated": true,
+        "triggered_by": "Automated_AIOps_Engine",
+        "timestamp": "2026-11-20T01:03:32+05:30"
+    },
+    {
+        "action_id": "ad8ae4cd",
+        "incident_id": "4f617615",
+        "project_id": "e2e-suite-model",
+        "action_type": "MODEL_INFERENCE_FALLBACK_RELOAD",
+        "action_name": "Model Inference Baseline Fallback & Reload",
+        "trigger_event": "Connection pool exhausted",
+        "category": "inference",
+        "status": "SUCCESS",
+        "execution_duration_ms": 42.35,
+        "description": "Engaged heuristic fallback scoring and re-initialized trained model artifact from disk.",
+        "remediation_output": {
+            "fallback_mode": "TRANSIENT_ACTIVE",
+            "model_reloaded": true,
+            "artifact_integrity": "SHA256_VERIFIED"
+        },
+        "is_simulated": true,
+        "triggered_by": "Auto_Response_e2e-suite-model",
+        "timestamp": "2026-11-20T01:03:42+05:30"
     }
 ]

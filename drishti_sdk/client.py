@@ -29,7 +29,7 @@ class DrishtiClient:
         self,
         project_id: str,
         api_key: str,
-        endpoint: str = "http://localhost:8000",
+        endpoint: str = "http://localhost:8001",
         batch_size: int = 10,
         flush_interval_seconds: float = 3.0,
         silent_errors: bool = True,

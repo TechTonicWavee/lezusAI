@@ -253,12 +253,12 @@ Start the FastAPI backend with Uvicorn:
 
 #### On Windows (PowerShell):
 ```powershell
-.\.venv\Scripts\uvicorn.exe integration.api:app --host 127.0.0.1 --port 8000 --reload
+.\.venv\Scripts\uvicorn.exe integration.api:app --host 127.0.0.1 --port 8001 --reload
 ```
 
 #### On Linux / macOS:
 ```bash
-uvicorn integration.api:app --host 127.0.0.1 --port 8000 --reload
+uvicorn integration.api:app --host 127.0.0.1 --port 8001 --reload
 ```
 
 ---
@@ -267,11 +267,11 @@ uvicorn integration.api:app --host 127.0.0.1 --port 8000 --reload
 
 Once started, access the platform endpoints in your browser or HTTP client:
 
-- **Observability Dashboard:** [http://127.0.0.1:8000/dashboard](http://127.0.0.1:8000/dashboard)
-- **Interactive Swagger API Docs:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **Alternative ReDoc Docs:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
-- **Health Check Endpoint:** [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
-- **Prometheus Metrics Feed:** [http://127.0.0.1:8000/metrics](http://127.0.0.1:8000/metrics)
+- **Observability Dashboard:** [http://127.0.0.1:8001/dashboard](http://127.0.0.1:8001/dashboard)
+- **Interactive Swagger API Docs:** [http://127.0.0.1:8001/docs](http://127.0.0.1:8001/docs)
+- **Alternative ReDoc Docs:** [http://127.0.0.1:8001/redoc](http://127.0.0.1:8001/redoc)
+- **Health Check Endpoint:** [http://127.0.0.1:8001/health](http://127.0.0.1:8001/health)
+- **Prometheus Metrics Feed:** [http://127.0.0.1:8001/metrics](http://127.0.0.1:8001/metrics)
 
 ---
 
@@ -290,7 +290,7 @@ All configuration is managed through environment variables defined in `.env`:
 | Variable | Description | Required | Default / Example Value |
 | :--- | :--- | :---: | :--- |
 | `DRISHTI_HOST` | Network interface binding for FastAPI | No | `127.0.0.1` |
-| `DRISHTI_PORT` | Port for the backend API and dashboard | No | `8000` |
+| `DRISHTI_PORT` | Port for the backend API and dashboard | No | `8001` |
 | `DRISHTI_LOG_LEVEL` | Logging verbosity (`debug`, `info`, `warning`, `error`) | No | `info` |
 | `DRISHTI_MASTER_API_KEY` | Master key allowing administrative telemetry ingestion | No | `dr_live_master_override_key` |
 | `MLFLOW_TRACKING_URI` | SQLite database URI for MLflow experiment storage | No | `sqlite:///mlflow.db` |
@@ -328,7 +328,7 @@ Before an external ML application can stream telemetry, it must be registered to
 
 #### cURL Registration Example
 ```bash
-curl -X POST "http://127.0.0.1:8000/projects/register" \
+curl -X POST "http://127.0.0.1:8001/projects/register" \
   -H "Content-Type: application/json" \
   -d '{
     "project_id": "customer-churn-model",
@@ -382,7 +382,7 @@ from drishti_sdk import DrishtiClient
 client = DrishtiClient(
     project_id="customer-churn-model",
     api_key="dr_live_9a4f781c9e83a002bc45d0124fe7891a23c4d56e",
-    endpoint="http://127.0.0.1:8000",
+    endpoint="http://127.0.0.1:8001",
     batch_size=5,          # Flushes every 5 events or 3 seconds
     silent_errors=True     # Never crashes your host application
 )
@@ -440,7 +440,7 @@ Applications written in Node.js, Go, Java, C#, Ruby, or cURL can submit telemetr
 import time
 import requests
 
-API_ENDPOINT = "http://127.0.0.1:8000/telemetry/ingest"
+API_ENDPOINT = "http://127.0.0.1:8001/telemetry/ingest"
 API_KEY = "dr_live_9a4f781c9e83a002bc45d0124fe7891a23c4d56e"
 
 # Execute inference
@@ -554,7 +554,7 @@ DRISHTI AI's universal telemetry contract accommodates diverse machine learning 
 
 ## 12. Understanding the Dashboard
 
-The DRISHTI AI dashboard is available at **`http://127.0.0.1:8000/dashboard`**. It is an interactive, dark-themed Single Page Application built with React 18 and Tailwind CSS:
+The DRISHTI AI dashboard is available at **`http://127.0.0.1:8001/dashboard`**. It is an interactive, dark-themed Single Page Application built with React 18 and Tailwind CSS:
 
 ```
 +----------------------------------------------------------------------------------------+

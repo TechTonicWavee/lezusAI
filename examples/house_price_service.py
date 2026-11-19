@@ -21,7 +21,7 @@ import requests
 
 PROJECT_ID = "house-price-prediction"
 PROJECT_NAME = "House Price Valuation Engine"
-ENDPOINT = os.getenv("DRISHTI_ENDPOINT", "http://127.0.0.1:8000")
+ENDPOINT = os.getenv("DRISHTI_ENDPOINT", "http://127.0.0.1:8001")
 
 
 def get_or_register_project(endpoint: str) -> str:
