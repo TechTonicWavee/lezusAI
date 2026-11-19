@@ -1,0 +1,14 @@
+service: "service:TaxiFarePredictor"
+description: "Taxi fare duration prediction model"
+labels:
+  team: mlops
+  project: mlops-platform
+include:
+  - "*.py"
+  - "preprocessor/**"
+models:
+  - taxi_fare_predictor:latest
+python:
+  requirements_txt: "./requirements.txt"
+docker:
+  python_version: "3.11"

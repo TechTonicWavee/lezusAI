@@ -24,3 +24,49 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# MLflow runtime data
+mlflow.db
+mlruns/
+
+# Runtime telemetry and generated data
+data/telemetry/
+logs/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Temporary files
+*.log
+*.tmp
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# MLflow runtime data
+mlflow.db
+mlruns/
+
+# Runtime data
+data/telemetry/
+logs/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
