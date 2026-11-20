@@ -1,43 +1,72 @@
-# Environment & Secrets
+# Secrets
 .env
 .env.*
 !.env.example
 *.pem
 *.key
-*MIGRATED*
-*credentials.json
-*credentials.txt
 
-# Backup & Temporary files
-*.bak
-*.backup
-*.tmp
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Generated files
 *.log
 logs/
 *.pid
 
-# Python artifacts
-__pycache__/
-*.py[cod]
-*$py.class
-.pytest_cache/
-.coverage
-htmlcov/
+# IDE
+.vscode/
+.idea/
 
-# Virtual Environments
-.venv/
-venv/
-ENV/
+# OS
+.DS_Store
+Thumbs.db
 
-# MLflow runtime tracking
+# MLflow runtime data
 mlflow.db
 mlruns/
 
-# Runtime telemetry & partitions
+# Runtime telemetry and generated data
 data/telemetry/
+logs/
 
-# IDE & OS
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Temporary files
+*.log
+*.tmp
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# MLflow runtime data
+mlflow.db
+mlruns/
+
+# Runtime data
+data/telemetry/
+logs/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/

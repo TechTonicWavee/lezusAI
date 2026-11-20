@@ -6,4 +6,3 @@ uvicorn
 requests
 joblib
 mlflow
-pydantic

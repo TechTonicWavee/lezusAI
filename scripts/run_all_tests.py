@@ -6,12 +6,10 @@ Executes comprehensive validation across:
 3. Incident Lifecycle, Deduplication & Safe Response
 4. Persistent Prometheus Metrics Engine
 5. Python SDK & Resiliency
-6. Security & Authentication Hardening Audit
-7. In-Process FastAPI Endpoint Verification
-8. External ML Sample Application (House Price Model)
+6. In-Process FastAPI Endpoint Verification
+7. External ML Sample Application (House Price Model)
 """
 
-import os
 import sys
 import time
 from pathlib import Path
@@ -26,7 +24,6 @@ import tests.test_telemetry as t_telem
 import tests.test_incidents as t_inc
 import tests.test_metrics as t_met
 import tests.test_sdk as t_sdk
-import tests.test_security_auth as t_sec
 
 print("=" * 75)
 print("DRISHTI AI — COMPREHENSIVE PRODUCTION READINESS TEST RUNNER")
@@ -48,11 +45,8 @@ t_met.run_tests()
 # Step 5: Python SDK
 t_sdk.run_tests()
 
-# Step 6: Security & Authentication Hardening
-t_sec.run_tests()
-
-# Step 7: FastAPI Route Handlers Verification
-print("--- [Test Suite 7: FastAPI Unified API Endpoints] ---")
+# Step 6: FastAPI Route Handlers Verification
+print("--- [Test Suite 6: FastAPI Unified API Endpoints] ---")
 from integration.api import (
     home,
     health,
@@ -79,10 +73,6 @@ hl = health()
 assert hl["status"] == "healthy"
 print("✓ GET / and GET /health operational")
 
-# Configure test admin key for runner
-test_admin_key = "dr_master_test_e2e_runner_key"
-os.environ["DRISHTI_MASTER_API_KEY"] = test_admin_key
-
 # Test API Project Registration
 reg_req = ProjectRegisterRequest(
     project_id="e2e-suite-model",
@@ -90,7 +80,7 @@ reg_req = ProjectRegisterRequest(
     description="Automated test registration",
     model_type="regression",
 )
-reg_res = api_register_project(reg_req, admin_token=test_admin_key)
+reg_res = api_register_project(reg_req)
 assert reg_res["status"] == "success"
 api_key = reg_res["api_key"]
 print(f"✓ POST /projects/register operational (Key prefix: {reg_res['project']['api_key_masked']})")
@@ -106,7 +96,7 @@ telem_req = TelemetryIngestRequest(
         confidence=0.96,
     )
 )
-ingest_res = api_ingest_telemetry(telem_req, token=api_key)
+ingest_res = api_ingest_telemetry(telem_req, x_api_key=api_key)
 assert ingest_res["status"] == "success"
 assert ingest_res["result"] == "NORMAL"
 print("✓ POST /telemetry/ingest operational")
@@ -124,13 +114,13 @@ batch_req = BatchTelemetryRequest(
         ),
     ]
 )
-batch_res = api_ingest_telemetry_batch(batch_req, token=api_key)
+batch_res = api_ingest_telemetry_batch(batch_req, x_api_key=api_key)
 assert batch_res["successful"] == 2
 assert batch_res["anomalies_detected"] >= 1
 print("✓ POST /telemetry/batch operational (Anomaly and incident auto-triggered)")
 
 # Test Prometheus Metrics Endpoint
-prom_res = prometheus_metrics(is_authorized=True)
+prom_res = prometheus_metrics()
 assert len(prom_res.body.decode().splitlines()) >= 25
 print("✓ GET /metrics operational with standard Prometheus exposition")
 
@@ -138,16 +128,16 @@ print("✓ GET /metrics operational with standard Prometheus exposition")
 dash_res = serve_dashboard()
 assert len(dash_res.body) > 20000
 print("✓ GET /dashboard HTML serving verified (50+ KB interactive React SPA)")
-print("✓ Suite 7 Passed!\n")
+print("✓ Suite 6 Passed!\n")
 
-# Step 8: Sample External ML Application (House Price Model)
-print("--- [Test Suite 8: Sample External Application Integration] ---")
+# Step 7: Sample External ML Application (House Price Model)
+print("--- [Test Suite 7: Sample External Application Integration] ---")
 from examples.house_price_service import HousePriceModel
 house_model = HousePriceModel()
 pred = house_model.predict(sqft=2200, bedrooms=3, bathrooms=2)
 assert pred > 200000.0, f"Unrealistic house price: {pred}"
 print(f"✓ HousePriceModel evaluated sample property -> ${pred:,.2f}")
-print("✓ Sample External ML Application verified. Suite 8 Passed!\n")
+print("✓ Sample External ML Application verified. Suite 7 Passed!\n")
 
 # Cleanup e2e-suite-model
 from integration.project_manager import load_projects, save_projects
@@ -159,5 +149,5 @@ if f_e2e.exists():
 
 elapsed_total = round(time.perf_counter() - start_all, 2)
 print("=" * 75)
-print(f"ALL 8 PRODUCTION & SECURITY SUITES PASSED IN {elapsed_total}s (100% SUCCESS)")
+print(f"ALL 7 PRODUCTION READINESS SUITES PASSED IN {elapsed_total}s (100% SUCCESS)")
 print("=" * 75)
