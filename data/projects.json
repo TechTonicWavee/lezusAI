@@ -3,20 +3,21 @@
         "project_id": "default",
         "name": "DRISHTI Core System",
         "description": "Default operational workspace for core DRISHTI system events",
-        "api_key_hash": "09369ed179c370a43845d8e34cb68342215c9da846572f6e35d86dea5fc9cd1e",
-        "api_key_prefix": "dr_live_defa",
+        "api_key_hash": "f3aa81716910bab6e82b5f9498c93167022713f849c295f97f7815c7e38b6643",
+        "api_key_prefix": "dr_live_6399",
         "created_at": "2026-11-19T22:34:18+05:30",
         "status": "ACTIVE",
         "model_type": "operational_anomaly",
         "framework": "loglizer",
-        "schema_mapping": {}
+        "schema_mapping": {},
+        "updated_at": "2026-11-20T11:02:25+05:30"
     },
     {
         "project_id": "taxi-fare-predictor",
         "name": "NYC Taxi Duration & Fare Demo",
         "description": "MLOps demonstration model for trip duration and fare prediction",
-        "api_key_hash": "52ad0051ce14e331ca66ee46d1632199e0a0b57db5ac67ae9d691e9990463e4f",
-        "api_key_prefix": "dr_live_taxi",
+        "api_key_hash": "288a156dddbf4d8c1792597dbbb0dcd3be6f3ae823296bd052fff251b36d0e7d",
+        "api_key_prefix": "dr_live_645e",
         "created_at": "2026-11-19T22:34:18+05:30",
         "status": "ACTIVE",
         "model_type": "regression",
@@ -24,7 +25,8 @@
         "schema_mapping": {
             "latency_field": "latency_ms",
             "prediction_field": "predicted_duration_minutes"
-        }
+        },
+        "updated_at": "2026-11-20T11:02:25+05:30"
     },
     {
         "project_id": "house-price-prediction",
@@ -71,19 +73,27 @@
         "schema_mapping": {}
     },
     {
-        "project_id": "string",
-        "name": "string",
+        "project_id": "unauth-proj",
+        "name": "Unauth",
         "description": "",
-        "api_key_hash": "038c12e7e244dba1eff78fe7fb34e3b75f7b1a883b5699e03dc24b46aae0c380",
-        "api_key_prefix": "dr_live_a64f",
-        "created_at": "2026-11-19T23:50:00+05:30",
+        "api_key_hash": "dda77b3e2f71f336b1ee68f14c45d7a44f55c0dfcce4a8bfdc82bddd90f6bb02",
+        "api_key_prefix": "dr_live_7add",
+        "created_at": "2026-11-20T11:12:04+05:30",
         "status": "ACTIVE",
         "model_type": "generic",
         "framework": "scikit-learn",
-        "schema_mapping": {
-            "additionalProp1": "string",
-            "additionalProp2": "string",
-            "additionalProp3": "string"
-        }
+        "schema_mapping": {}
+    },
+    {
+        "project_id": "3654",
+        "name": "CREDITcardfraud",
+        "description": "fraud detection",
+        "api_key_hash": "13774a26752e56916a24f3e2b961083290396b914ab74488e9bd5cf213a8b6d4",
+        "api_key_prefix": "dr_live_6204",
+        "created_at": "2026-11-20T11:18:02+05:30",
+        "status": "ACTIVE",
+        "model_type": "classification",
+        "framework": "scikit-learn",
+        "schema_mapping": {}
     }
 ]

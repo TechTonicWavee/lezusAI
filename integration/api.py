@@ -2,6 +2,7 @@
 DRISHTI AI — Intelligent MLOps & AIOps Platform API
 Production-ready REST API supporting:
 - Multi-project registration and secure API key authentication
+- Role-based authorization: Admin, Operator, and isolated Project scopes
 - Universal ML telemetry ingestion (predictions, errors, latency, ground-truth, resource usage)
 - Adaptive Loglizer IsolationForest operational anomaly detection
 - Project-isolated incident management, deduplication, and correlation
@@ -9,6 +10,7 @@ Production-ready REST API supporting:
 - MLflow experiment tracking, model registry, and MLOps serving
 - Application observability & Prometheus metrics exporter
 - Interactive multi-project dark-themed React dashboard
+- Render and container deployment ready
 """
 
 import os
@@ -19,7 +21,7 @@ from typing import Dict, Any, List, Optional
 
 import joblib
 import numpy as np
-from fastapi import FastAPI, HTTPException, Response, Request, Header, Depends
+from fastapi import FastAPI, HTTPException, Response, Request, Header, Query, Depends, status as http_status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
@@ -38,6 +40,16 @@ from integration.project_manager import (
     get_project,
     verify_project_api_key,
     authenticate_api_key,
+    verify_admin_key,
+    verify_operator_key,
+)
+from integration.security import (
+    extract_api_key,
+    require_admin_auth,
+    require_operator_or_admin_auth,
+    verify_project_ownership_or_admin,
+    get_authenticated_scope,
+    require_metrics_auth,
 )
 from integration.telemetry_service import (
     ingest_telemetry_event,
@@ -82,15 +94,42 @@ MODEL_PATH = ROOT / "models" / "log_anomaly_detector.joblib"
 app = FastAPI(
     title="DRISHTI AI",
     description="Intelligent MLOps & AIOps Platform — Multi-Project Observability",
-    version="1.1.0",
+    version="1.2.0",
 )
 
-# Enable CORS
+
+# Startup initialization for required directories
+@app.on_event("startup")
+def startup_init():
+    (ROOT / "data" / "telemetry").mkdir(parents=True, exist_ok=True)
+    (ROOT / "alerts").mkdir(parents=True, exist_ok=True)
+    (ROOT / "models").mkdir(parents=True, exist_ok=True)
+
+
+# Configure CORS securely
+allowed_origins_env = os.getenv("DRISHTI_ALLOWED_ORIGINS", "")
+if allowed_origins_env.strip():
+    allowed_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+    allow_credentials = True
+else:
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8001",
+        "http://127.0.0.1:8001",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
+    allow_credentials = True
+
+if "*" in allowed_origins:
+    allow_credentials = False
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=allowed_origins,
+    allow_credentials=allow_credentials,
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -183,50 +222,26 @@ class TaxiTripRequest(BaseModel):
 
 
 # ============================================================================
-# Security & Authorization Helpers
-# ============================================================================
-
-def verify_auth_for_project(project_id: str, x_api_key: Optional[str] = Header(None, alias="X-API-Key")) -> str:
-    """Validate project API key from header or master override."""
-    master = os.getenv("DRISHTI_MASTER_API_KEY", "dr_live_master_override_key")
-    if x_api_key and (x_api_key == master or x_api_key == "dr_live_default_system_key"):
-        return project_id
-
-    if not x_api_key:
-        # Allow default open access only for the 'default' prototype project
-        if project_id == "default":
-            return project_id
-        raise HTTPException(
-            status_code=401,
-            detail="Missing 'X-API-Key' authentication header.",
-            headers={"WWW-Authenticate": "ApiKey"},
-        )
-
-    if not verify_project_api_key(project_id, x_api_key):
-        raise HTTPException(
-            status_code=403,
-            detail=f"Invalid API Key for project '{project_id}'.",
-        )
-
-    return project_id
-
-
-# ============================================================================
-# Root & Health Endpoints
+# Root & Health Endpoints (Public)
 # ============================================================================
 
 @app.get("/")
 def home():
+    """Public platform metadata and service status."""
     projects = list_projects()
     return {
         "project": "DRISHTI AI",
         "tagline": "Universal Intelligent MLOps & AIOps Platform",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "status": "running",
         "dashboard_ui": "/dashboard",
         "prometheus_metrics": "/metrics",
         "documentation": "/docs",
         "registered_projects_count": len(projects),
+        "security": {
+            "authentication_mode": "Role-Based Token Isolation (Admin / Operator / Project)",
+            "master_key_configured": bool(os.getenv("DRISHTI_MASTER_API_KEY")),
+        },
         "services": {
             "project_management": "Active (Secure API Key Auth)",
             "universal_telemetry": "Active (Batch & Single Ingestion)",
@@ -241,6 +256,7 @@ def home():
 
 @app.get("/health")
 def health():
+    """Unauthenticated health probe for monitoring agents and container orchestrators."""
     projects = list_projects()
     telemetry_dir_exists = (ROOT / "data" / "telemetry").exists()
     return {
@@ -249,15 +265,25 @@ def health():
         "detector_type": "Loglizer IsolationForest",
         "registered_projects": len(projects),
         "telemetry_storage": "operational" if telemetry_dir_exists else "initializing",
-        "mlops_status": get_model_status(),
         "timestamp": time.time(),
     }
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/ui", response_class=HTMLResponse)
 def serve_dashboard():
-    """Serve the complete dark-themed React observability dashboard."""
-    return HTMLResponse(content=DASHBOARD_HTML)
+    """Serve the complete Logtail-style terminal observability dashboard."""
+    import importlib
+    import integration.dashboard_html
+    importlib.reload(integration.dashboard_html)
+    return HTMLResponse(
+        content=integration.dashboard_html.get_dashboard_html(),
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
 
 
 # ============================================================================
@@ -265,11 +291,20 @@ def serve_dashboard():
 # ============================================================================
 
 @app.post("/projects/register", status_code=201)
-def api_register_project(req: ProjectRegisterRequest):
+def api_register_project(
+    req: ProjectRegisterRequest,
+    admin_token: str = Depends(require_admin_auth),
+):
     """
     Register a new ML project and generate a secure API key.
+    Requires Administrator privileges (DRISHTI_MASTER_API_KEY).
     The raw API key is returned ONLY once in this response.
     """
+    if not isinstance(admin_token, str) or not verify_admin_key(admin_token):
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Forbidden. Administrator credentials required.",
+        )
     try:
         project_record, raw_api_key = register_project(
             project_id=req.project_id,
@@ -293,17 +328,45 @@ def api_register_project(req: ProjectRegisterRequest):
 
 
 @app.get("/projects")
-def api_list_projects():
-    """List all registered ML projects (with masked API keys)."""
+def api_list_projects(token: Optional[str] = Depends(extract_api_key)):
+    """
+    List registered ML projects (with masked API keys).
+    - Administrators & Operators view all projects.
+    - Project owners view only their own project.
+    """
+    scope = get_authenticated_scope(token)
+    if not scope["authenticated"]:
+        raise HTTPException(
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to list projects.",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+
+    all_projs = list_projects()
+    if scope["role"] in ["admin", "operator"]:
+        return {
+            "total_projects": len(all_projs),
+            "projects": all_projs,
+        }
+
+    # Project scope: filter to own project only
+    filtered = [p for p in all_projs if p["project_id"] == scope["project_id"]]
     return {
-        "total_projects": len(list_projects()),
-        "projects": list_projects(),
+        "total_projects": len(filtered),
+        "projects": filtered,
     }
 
 
 @app.get("/projects/{project_id}")
-def api_get_project(project_id: str):
-    """Retrieve metadata and telemetry stats for a specific project."""
+def api_get_project(
+    project_id: str,
+    token: Optional[str] = Depends(extract_api_key),
+):
+    """
+    Retrieve metadata and telemetry stats for a specific project.
+    Caller must be the project owner or an administrator.
+    """
+    verify_project_ownership_or_admin(project_id, token)
     p = get_project(project_id)
     if not p:
         raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found.")
@@ -317,19 +380,19 @@ def api_get_project(project_id: str):
 
 
 # ============================================================================
-# Universal Telemetry Ingestion Endpoints
+# Universal Telemetry Ingestion Endpoints (Project-Isolated)
 # ============================================================================
 
 @app.post("/telemetry/ingest")
 def api_ingest_telemetry(
     req: TelemetryIngestRequest,
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    token: Optional[str] = Depends(extract_api_key),
 ):
     """
     Submit a single telemetry record from an external ML application.
-    Requires authentication via X-API-Key.
+    Requires authentication matching req.project_id or Administrator key.
     """
-    verify_auth_for_project(req.project_id, x_api_key)
+    verify_project_ownership_or_admin(req.project_id, token)
     try:
         result = ingest_telemetry_event(req.project_id, req.record.model_dump())
         return result
@@ -341,13 +404,13 @@ def api_ingest_telemetry(
 @app.post("/telemetry/batch")
 def api_ingest_telemetry_batch(
     req: BatchTelemetryRequest,
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    token: Optional[str] = Depends(extract_api_key),
 ):
     """
     Batch submit multiple telemetry records from an external ML application.
-    Requires authentication via X-API-Key.
+    Requires authentication matching req.project_id or Administrator key.
     """
-    verify_auth_for_project(req.project_id, x_api_key)
+    verify_project_ownership_or_admin(req.project_id, token)
     try:
         raw_records = [r.model_dump() for r in req.records]
         result = ingest_batch_telemetry(req.project_id, raw_records)
@@ -362,11 +425,13 @@ def api_get_telemetry(
     project_id: str,
     limit: int = 50,
     event_type: Optional[str] = None,
+    token: Optional[str] = Depends(extract_api_key),
 ):
-    """Retrieve isolated telemetry events for a specific project."""
-    p = get_project(project_id)
-    if not p:
-        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found.")
+    """
+    Retrieve isolated telemetry events for a specific project.
+    Enforces project ownership or Administrator privileges.
+    """
+    verify_project_ownership_or_admin(project_id, token)
     records = get_project_telemetry(project_id, limit=limit, event_type=event_type)
     return {
         "project_id": project_id,
@@ -376,16 +441,20 @@ def api_get_telemetry(
 
 
 @app.get("/telemetry/{project_id}/drift")
-def api_get_drift(project_id: str):
-    """Compute ground-truth accuracy and drift metrics for a specific project."""
-    p = get_project(project_id)
-    if not p:
-        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found.")
+def api_get_drift(
+    project_id: str,
+    token: Optional[str] = Depends(extract_api_key),
+):
+    """
+    Compute ground-truth accuracy and drift metrics for a specific project.
+    Enforces project ownership or Administrator privileges.
+    """
+    verify_project_ownership_or_admin(project_id, token)
     return get_project_drift_and_accuracy(project_id)
 
 
 # ============================================================================
-# Operational Log Prediction (Backward Compatibility)
+# Operational Log Prediction (Project-Scoped & Authenticated)
 # ============================================================================
 
 def extract_features(message: str) -> List[int]:
@@ -431,16 +500,21 @@ def extract_features(message: str) -> List[int]:
 
 
 @app.post("/predict")
-def predict(request: LogRequest):
+def predict(
+    request: LogRequest,
+    token: Optional[str] = Depends(extract_api_key),
+):
     """
-    Evaluate application log message.
-    Preserves backward compatibility while logging metrics and project-level isolation.
+    Evaluate application log message for anomalies.
+    Requires authentication matching request.project_id or Administrator key.
     """
+    pid = request.project_id or "default"
+    verify_project_ownership_or_admin(pid, token)
+
     if detector is None:
         raise HTTPException(status_code=503, detail="Log anomaly detection model is not loaded.")
 
     start_time = time.perf_counter()
-    project_id = request.project_id or "default"
 
     try:
         features = extract_features(request.message)
@@ -453,7 +527,7 @@ def predict(request: LogRequest):
         record_log_prediction(
             is_anomaly=(prediction == 1),
             latency_ms=elapsed_ms,
-            project_id=project_id,
+            project_id=pid,
         )
 
         alert = None
@@ -467,7 +541,7 @@ def predict(request: LogRequest):
                 severity=severity,
                 category=category,
                 source="API_Predict_Service",
-                project_id=project_id,
+                project_id=pid,
             )
 
             # Trigger safe automated remediation
@@ -476,13 +550,13 @@ def predict(request: LogRequest):
                 message=request.message,
                 category=category,
                 severity=severity,
-                project_id=project_id,
+                project_id=pid,
             )
             record_automated_response()
 
         return {
             "log_message": request.message,
-            "project_id": project_id,
+            "project_id": pid,
             "prediction": prediction,
             "result": "ANOMALY" if prediction == 1 else "NORMAL",
             "features_used": len(features),
@@ -491,19 +565,29 @@ def predict(request: LogRequest):
             "remediation_action": remediation_action,
         }
 
+    except HTTPException:
+        raise
     except Exception as error:
-        record_prediction_error(project_id)
+        record_prediction_error(pid)
         raise HTTPException(status_code=500, detail=str(error))
 
 
 @app.post("/logs/batch-predict")
-def batch_predict(request: BatchLogRequest):
-    """Process a batch of log records."""
-    results = []
+def batch_predict(
+    request: BatchLogRequest,
+    token: Optional[str] = Depends(extract_api_key),
+):
+    """
+    Process a batch of log records.
+    Requires authentication matching request.project_id or Administrator key.
+    """
     pid = request.project_id or "default"
+    verify_project_ownership_or_admin(pid, token)
+
+    results = []
     for line in request.logs:
         if line.strip():
-            res = predict(LogRequest(message=line, project_id=pid))
+            res = predict(LogRequest(message=line, project_id=pid), token=token)
             results.append(res)
     return {
         "project_id": pid,
@@ -514,7 +598,7 @@ def batch_predict(request: BatchLogRequest):
 
 
 # ============================================================================
-# Incident Management Endpoints (Multi-Project)
+# Incident Management Endpoints (Scoped & Role-Protected)
 # ============================================================================
 
 @app.get("/alerts")
@@ -522,7 +606,29 @@ def list_alerts(
     project_id: Optional[str] = None,
     status: Optional[str] = None,
     severity: Optional[str] = None,
+    token: Optional[str] = Depends(extract_api_key),
 ):
+    """
+    List alerts and incidents with strict project scoping.
+    - Administrators & Operators can view all or filter by project.
+    - Project owners can ONLY view incidents belonging to their own project.
+    """
+    scope = get_authenticated_scope(token)
+    if not scope["authenticated"]:
+        raise HTTPException(
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to view incidents.",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+
+    if scope["role"] == "project":
+        if project_id and project_id != scope["project_id"]:
+            raise HTTPException(
+                status_code=http_status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied. Cannot view alerts for foreign project '{project_id}'.",
+            )
+        project_id = scope["project_id"]
+
     alerts = get_alerts(project_id=project_id, status=status, severity=severity)
     return {
         "project_id": project_id or "all",
@@ -532,14 +638,39 @@ def list_alerts(
 
 
 @app.patch("/alerts/{alert_id}/resolve")
-def resolve_incident_endpoint(alert_id: str, payload: Optional[ResolveRequest] = None):
-    notes = payload.resolution_notes if payload else "Resolved by operator"
-    actor = payload.resolved_by if payload else "AIOps_Operator"
+def resolve_incident_endpoint(
+    alert_id: str,
+    payload: Optional[ResolveRequest] = None,
+    token: Optional[str] = Depends(extract_api_key),
+):
+    """
+    Resolve an incident.
+    - Administrators & Operators can resolve any incident.
+    - Project owners can ONLY resolve incidents belonging to their own project.
+    """
+    scope = get_authenticated_scope(token)
+    if not scope["authenticated"]:
+        raise HTTPException(
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to resolve incidents.",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
 
-    alert = resolve_alert(alert_id, resolution_notes=notes, resolved_by=actor)
-    if alert is None:
+    alerts = get_alerts()
+    target = next((a for a in alerts if a["id"] == alert_id), None)
+    if not target:
         raise HTTPException(status_code=404, detail="Alert not found")
 
+    if scope["role"] == "project" and target.get("project_id") != scope["project_id"]:
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Cannot resolve another project's incident.",
+        )
+
+    notes = payload.resolution_notes if payload else "Resolved by operator"
+    actor = payload.resolved_by if payload else (f"Project_{scope.get('project_id')}" if scope["role"] == "project" else "AIOps_Operator")
+
+    alert = resolve_alert(alert_id, resolution_notes=notes, resolved_by=actor)
     return {
         "message": "Incident resolved successfully",
         "alert": alert,
@@ -547,16 +678,56 @@ def resolve_incident_endpoint(alert_id: str, payload: Optional[ResolveRequest] =
 
 
 @app.patch("/alerts/{alert_id}/status")
-def change_incident_status(alert_id: str, req: StatusUpdateRequest):
-    alert = update_alert_status(alert_id, new_status=req.status, notes=req.notes, actor=req.actor)
-    if alert is None:
+def change_incident_status(
+    alert_id: str,
+    req: StatusUpdateRequest,
+    token: Optional[str] = Depends(extract_api_key),
+):
+    """
+    Transition incident lifecycle status.
+    Enforces project ownership or operator/admin privileges.
+    """
+    scope = get_authenticated_scope(token)
+    if not scope["authenticated"]:
+        raise HTTPException(
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to update incident status.",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+
+    alerts = get_alerts()
+    target = next((a for a in alerts if a["id"] == alert_id), None)
+    if not target:
         raise HTTPException(status_code=404, detail="Alert not found")
+
+    if scope["role"] == "project" and target.get("project_id") != scope["project_id"]:
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Cannot modify another project's incident.",
+        )
+
+    actor = req.actor or (f"Project_{scope.get('project_id')}" if scope["role"] == "project" else "AIOps_Operator")
+    alert = update_alert_status(alert_id, new_status=req.status, notes=req.notes, actor=actor)
     return {"message": f"Status updated to {req.status}", "alert": alert}
 
 
 @app.get("/incidents/stats")
-def incident_stats(project_id: Optional[str] = None):
-    """Summary KPI metrics for incidents, categories, severities, and Keep adapter."""
+def incident_stats(
+    project_id: Optional[str] = None,
+    token: Optional[str] = Depends(extract_api_key),
+):
+    """KPI summary for incidents, categories, and severities."""
+    scope = get_authenticated_scope(token)
+    if not scope["authenticated"]:
+        raise HTTPException(
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to view incident stats.",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+
+    if scope["role"] == "project":
+        project_id = scope["project_id"]
+
     return get_incident_stats(project_id=project_id)
 
 
@@ -564,8 +735,20 @@ def incident_stats(project_id: Optional[str] = None):
 def incident_history(
     incident_id: Optional[str] = None,
     project_id: Optional[str] = None,
+    token: Optional[str] = Depends(extract_api_key),
 ):
-    """Complete audit trail of incident lifecycle events."""
+    """Audit trail of incident lifecycle events."""
+    scope = get_authenticated_scope(token)
+    if not scope["authenticated"]:
+        raise HTTPException(
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to view audit history.",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+
+    if scope["role"] == "project":
+        project_id = scope["project_id"]
+
     return {
         "project_id": project_id or "all",
         "history": get_incident_history(incident_id=incident_id, project_id=project_id),
@@ -580,8 +763,20 @@ def incident_history(
 def list_responses(
     incident_id: Optional[str] = None,
     project_id: Optional[str] = None,
+    token: Optional[str] = Depends(extract_api_key),
 ):
     """List executed automated remediation actions."""
+    scope = get_authenticated_scope(token)
+    if not scope["authenticated"]:
+        raise HTTPException(
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to view remediation actions.",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+
+    if scope["role"] == "project":
+        project_id = scope["project_id"]
+
     return {
         "project_id": project_id or "all",
         "stats": get_response_stats(project_id=project_id),
@@ -590,12 +785,31 @@ def list_responses(
 
 
 @app.post("/responses/trigger/{incident_id}")
-def manual_trigger_remediation(incident_id: str):
+def manual_trigger_remediation(
+    incident_id: str,
+    token: Optional[str] = Depends(extract_api_key),
+):
     """Manually trigger safe remediation for an open incident."""
+    scope = get_authenticated_scope(token)
+    if not scope["authenticated"]:
+        raise HTTPException(
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to trigger remediation.",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+
     alerts = get_alerts()
     target = next((a for a in alerts if a["id"] == incident_id), None)
     if not target:
         raise HTTPException(status_code=404, detail="Incident not found")
+
+    if scope["role"] == "project" and target.get("project_id") != scope["project_id"]:
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Cannot trigger remediation for another project's incident.",
+        )
+
+    actor = f"Project_{scope.get('project_id')}" if scope["role"] == "project" else "Manual_Dashboard_Operator"
 
     action = execute_remediation(
         incident_id=target["id"],
@@ -603,7 +817,7 @@ def manual_trigger_remediation(incident_id: str):
         category=target.get("category", "general"),
         severity=target.get("severity", "ERROR"),
         project_id=target.get("project_id", "default"),
-        triggered_by="Manual_Dashboard_Operator",
+        triggered_by=actor,
     )
     record_automated_response()
     return {"message": "Remediation executed", "action": action}
@@ -614,20 +828,28 @@ def manual_trigger_remediation(incident_id: str):
 # ============================================================================
 
 @app.get("/mlops/runs")
-def mlops_runs(limit: int = 10):
+def mlops_runs(
+    limit: int = 10,
+    operator_token: str = Depends(require_operator_or_admin_auth),
+):
     """List recent experiment runs tracked in MLflow."""
     return {"runs": get_experiment_runs(limit=limit)}
 
 
 @app.get("/mlops/model-status")
-def mlops_model_status():
+def mlops_model_status(operator_token: str = Depends(require_operator_or_admin_auth)):
     """Show current registered models and staging/production stages."""
     return get_model_status()
 
 
 @app.post("/mlops/train")
-def mlops_train():
-    """Trigger MLOps training pipeline."""
+def mlops_train(admin_token: str = Depends(require_admin_auth)):
+    """Trigger MLOps training pipeline (Administrator only)."""
+    if not isinstance(admin_token, str) or not verify_admin_key(admin_token):
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Forbidden. Administrator credentials required.",
+        )
     try:
         result = trigger_training()
         record_mlops_training(rmse=result["metrics"]["rmse"])
@@ -637,8 +859,13 @@ def mlops_train():
 
 
 @app.post("/mlops/promote")
-def mlops_promote():
-    """Promote latest staging model to Production."""
+def mlops_promote(admin_token: str = Depends(require_admin_auth)):
+    """Promote latest staging model to Production (Administrator only)."""
+    if not isinstance(admin_token, str) or not verify_admin_key(admin_token):
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Forbidden. Administrator credentials required.",
+        )
     try:
         return trigger_promotion()
     except Exception as e:
@@ -646,7 +873,10 @@ def mlops_promote():
 
 
 @app.post("/mlops/predict")
-def mlops_predict(trip: TaxiTripRequest):
+def mlops_predict(
+    trip: TaxiTripRequest,
+    operator_token: str = Depends(require_operator_or_admin_auth),
+):
     """Inference against production taxi duration and fare model."""
     try:
         return predict_taxi_duration(trip.model_dump())
@@ -659,29 +889,46 @@ def mlops_predict(trip: TaxiTripRequest):
 # ============================================================================
 
 @app.get("/metrics")
-def prometheus_metrics():
+def prometheus_metrics(is_authorized: bool = Depends(require_metrics_auth)):
     """Standard Prometheus metrics exposition endpoint."""
     content = generate_prometheus_metrics()
     return Response(content=content, media_type="text/plain; version=0.0.4; charset=utf-8")
 
 
 @app.get("/system/stats")
-def system_stats(project_id: Optional[str] = None):
+def system_stats(
+    project_id: Optional[str] = None,
+    token: Optional[str] = Depends(extract_api_key),
+):
     """Comprehensive observability telemetry payload."""
+    scope = get_authenticated_scope(token)
+    if not scope["authenticated"]:
+        raise HTTPException(
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to view system stats.",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+
+    if scope["role"] == "project":
+        project_id = scope["project_id"]
+
     return {
         "project_id": project_id or "all",
         "metrics": get_metrics_summary(project_id=project_id),
         "incidents": get_incident_stats(project_id=project_id),
         "responses": get_response_stats(project_id=project_id),
         "projects_count": len(list_projects()),
-        "mlops": get_model_status(),
+        "mlops": get_model_status() if scope["role"] in ["admin", "operator"] else {"status": "restricted"},
     }
 
 
+# ============================================================================
+# Server Entrypoint (Render & Local Compatible)
+# ============================================================================
+
 if __name__ == "__main__":
     import uvicorn
-    host = os.getenv("DRISHTI_HOST", "127.0.0.1")
-    port = int(os.getenv("DRISHTI_PORT", "8001"))
+    host = os.getenv("DRISHTI_HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", os.getenv("DRISHTI_PORT", "8001")))
     log_level = os.getenv("DRISHTI_LOG_LEVEL", "info")
     uvicorn.run("integration.api:app", host=host, port=port, reload=True, log_level=log_level)
-

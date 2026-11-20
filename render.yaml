@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: drishti-ai
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn integration.api:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: DRISHTI_HOST
+        value: 0.0.0.0
+      - key: DRISHTI_MASTER_API_KEY
+        generateValue: true
+      - key: DRISHTI_ALLOW_ANONYMOUS_METRICS
+        value: "true"
+      - key: MLFLOW_TRACKING_URI
+        value: sqlite:///mlflow.db
+      - key: MODEL_NAME
+        value: taxi_fare_predictor
+      - key: RETRAIN_RMSE_THRESHOLD
+        value: "0.05"

@@ -26,21 +26,21 @@ ENDPOINT = os.getenv("DRISHTI_ENDPOINT", "http://127.0.0.1:8001")
 
 def get_or_register_project(endpoint: str) -> str:
     """Register the house price project with DRISHTI AI or use configured key."""
-    # Check if project already exists
-    try:
-        res = requests.get(f"{endpoint}/projects/{PROJECT_ID}", timeout=2.0)
-        if res.status_code == 200:
-            print(f"[HousePriceApp] Project '{PROJECT_ID}' already exists.")
-            # Use master key or default key for existing project in demo
-            return os.getenv("DRISHTI_MASTER_API_KEY", "dr_live_master_override_key")
-    except Exception:
-        pass
+    # Check configured API key from environment
+    env_key = os.getenv("DRISHTI_API_KEY") or os.getenv("DRISHTI_HOUSE_PRICE_KEY") or os.getenv("DRISHTI_MASTER_API_KEY")
+    if env_key:
+        print(f"[HousePriceApp] Using configured API key (prefix: {env_key[:8]}...)")
+        return env_key
 
-    # Register project
+    admin_key = os.getenv("DRISHTI_MASTER_API_KEY")
+    headers = {"X-API-Key": admin_key} if admin_key else {}
+
+    # Register project with DRISHTI AI
     print(f"[HousePriceApp] Registering new project '{PROJECT_ID}' at {endpoint}...")
     try:
         reg_res = requests.post(
             f"{endpoint}/projects/register",
+            headers=headers,
             json={
                 "project_id": PROJECT_ID,
                 "name": PROJECT_NAME,
@@ -60,13 +60,12 @@ def get_or_register_project(endpoint: str) -> str:
             api_key = data["api_key"]
             print(f"[HousePriceApp] Registered successfully. API Key received: {data['project']['api_key_masked']}")
             return api_key
-        elif reg_res.status_code == 400:
-            # Already exists
-            return os.getenv("DRISHTI_MASTER_API_KEY", "dr_live_master_override_key")
+        else:
+            print(f"[HousePriceApp] Registration response: HTTP {reg_res.status_code}")
     except Exception as e:
-        print(f"[HousePriceApp] Registration call note: {e}")
+        print(f"[HousePriceApp] Note during registration: {e}")
 
-    return os.getenv("DRISHTI_MASTER_API_KEY", "dr_live_master_override_key")
+    return os.getenv("DRISHTI_API_KEY", "")
 
 
 class HousePriceModel:
